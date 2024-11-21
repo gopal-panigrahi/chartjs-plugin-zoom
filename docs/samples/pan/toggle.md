@@ -1,4 +1,6 @@
-# API
+# Pan Toggle
+
+In this example pan is initially disabled.
 
 ```js chart-editor
 // <block:data:1>
@@ -26,10 +28,6 @@ const data = {
 
 // <block:scales:2>
 const scaleOpts = {
-  reverse: true,
-  ticks: {
-    callback: (val, index, ticks) => index === 0 || index === ticks.length - 1 ? null : val,
-  },
   grid: {
     borderColor: Utils.randomColor(1),
     color: 'rgba( 0, 0, 0, 0.1)',
@@ -50,66 +48,58 @@ const scales = {
 Object.keys(scales).forEach(scale => Object.assign(scales[scale], scaleOpts));
 // </block:scales>
 
+// <block:zoom:0>
+const zoomOptions = {
+  limits: {
+    x: {min: -200, max: 200, minRange: 50},
+    y: {min: -200, max: 200, minRange: 50}
+  },
+  pan: {
+    enabled: false,
+    mode: 'xy',
+  },
+  zoom: {
+    wheel: {
+      enabled: false,
+    },
+    pinch: {
+      enabled: true
+    },
+  }
+};
+// </block:zoom>
+
 // <block:config:1>
 const config = {
   type: 'scatter',
   data: data,
   options: {
     scales: scales,
-  }
+    plugins: {
+      zoom: zoomOptions,
+    },
+  },
 };
 // </block:config>
 
-// <block:actions:0>
-// Note: changes to these actions are not applied to the buttons.
 const actions = [
   {
-    name: 'Zoom +10%',
+    name: 'Toggle pan',
     handler(chart) {
-      chart.zoom(1.1);
+      chart.options.plugins.zoom.pan.enabled = !chart.options.plugins.zoom.pan.enabled;
+      chart.update();
     }
-  }, {
-    name: 'Zoom -10%',
-    handler(chart) {
-      chart.zoom(2 - 1 / 0.9);
-    },
-  }, {
-    name: 'Zoom x +10%',
-    handler(chart) {
-      chart.zoom({x: 1.1});
-    }
-  }, {
-    name: 'Zoom x -10%',
-    handler(chart) {
-      chart.zoom({x: 2 - 1 / 0.9});
-    },
-  }, {
-    name: 'Pan x 100px (anim)',
-    handler(chart) {
-      chart.pan({x: 100}, undefined, 'default');
-    }
-  }, {
-    name: 'Pan x -100px (anim)',
-    handler(chart) {
-      chart.pan({x: -100}, undefined, 'default');
-    },
-  }, {
-    name: 'Zoom x: 0..-100, y: 0..100',
-    handler(chart) {
-      chart.zoomScale('x', {min: -100, max: 0}, 'default');
-      chart.zoomScale('y', {min: 0, max: 100}, 'default');
-    }
-  }, {
+  },
+  {
     name: 'Reset zoom',
     handler(chart) {
-      chart.resetZoom();
+      chart.resetZoom('zoom');
     }
   }
 ];
-// </block:actions>
 
 module.exports = {
   actions,
-  config
+  config,
 };
 ```

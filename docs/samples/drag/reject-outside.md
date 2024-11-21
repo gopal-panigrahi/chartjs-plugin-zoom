@@ -1,4 +1,6 @@
-# API
+# Reject outside chartArea
+
+Zooming is performed by clicking and selecting an area over the chart with the mouse. Pan is activated by keeping `ctrl` pressed.
 
 ```js chart-editor
 // <block:data:1>
@@ -50,54 +52,54 @@ const scales = {
 Object.keys(scales).forEach(scale => Object.assign(scales[scale], scaleOpts));
 // </block:scales>
 
+// <block:zoom:0>
+const dragColor = Utils.randomColor(0.4);
+const zoomOptions = {
+  pan: {
+    enabled: true,
+    mode: 'xy',
+    modifierKey: 'ctrl',
+  },
+  zoom: {
+    mode: 'xy',
+    // here is the magic!
+    onZoomStart: ({chart, point}) => chart.isPointInArea(point),
+    drag: {
+      enabled: true,
+      borderColor: 'rgb(54, 162, 235)',
+      borderWidth: 1,
+      backgroundColor: 'rgba(54, 162, 235, 0.3)'
+    }
+  }
+};
+// </block:zoom>
+
+const zoomStatus = () => zoomOptions.zoom.drag.enabled ? 'enabled' : 'disabled';
+
 // <block:config:1>
 const config = {
   type: 'scatter',
   data: data,
   options: {
     scales: scales,
+    plugins: {
+      zoom: zoomOptions,
+      title: {
+        display: true,
+        position: 'bottom',
+        text: (ctx) => 'Zoom: ' + zoomStatus()
+      }
+    },
   }
 };
 // </block:config>
 
-// <block:actions:0>
-// Note: changes to these actions are not applied to the buttons.
 const actions = [
   {
-    name: 'Zoom +10%',
+    name: 'Toggle zoom',
     handler(chart) {
-      chart.zoom(1.1);
-    }
-  }, {
-    name: 'Zoom -10%',
-    handler(chart) {
-      chart.zoom(2 - 1 / 0.9);
-    },
-  }, {
-    name: 'Zoom x +10%',
-    handler(chart) {
-      chart.zoom({x: 1.1});
-    }
-  }, {
-    name: 'Zoom x -10%',
-    handler(chart) {
-      chart.zoom({x: 2 - 1 / 0.9});
-    },
-  }, {
-    name: 'Pan x 100px (anim)',
-    handler(chart) {
-      chart.pan({x: 100}, undefined, 'default');
-    }
-  }, {
-    name: 'Pan x -100px (anim)',
-    handler(chart) {
-      chart.pan({x: -100}, undefined, 'default');
-    },
-  }, {
-    name: 'Zoom x: 0..-100, y: 0..100',
-    handler(chart) {
-      chart.zoomScale('x', {min: -100, max: 0}, 'default');
-      chart.zoomScale('y', {min: 0, max: 100}, 'default');
+      zoomOptions.zoom.drag.enabled = !zoomOptions.zoom.drag.enabled;
+      chart.update();
     }
   }, {
     name: 'Reset zoom',
@@ -106,10 +108,9 @@ const actions = [
     }
   }
 ];
-// </block:actions>
 
 module.exports = {
   actions,
-  config
+  config,
 };
 ```

@@ -1,4 +1,4 @@
-import {callback as call} from 'chart.js/helpers';
+import {callback as call, getRelativePosition} from 'chart.js/helpers';
 import Hammer from 'hammerjs';
 import {pan, zoom} from './core';
 import {getState} from './state';
@@ -66,9 +66,10 @@ function handlePinch(chart, state, e) {
   }
 }
 
-function startPinch(chart, state) {
+function startPinch(chart, state, event) {
   if (state.options.zoom.pinch.enabled) {
-    call(state.options.zoom.onZoomStart, [{chart}]);
+    const point = getRelativePosition(event, chart);
+    call(state.options.zoom.onZoomStart, [{chart, event, point}]);
     state.scale = 1;
   }
 }
@@ -107,14 +108,14 @@ function startPan(chart, state, event) {
 
   state.panScales = getEnabledScalesByPoint(state.options.pan, point, chart);
   state.delta = {x: 0, y: 0};
-  clearTimeout(state.panEndTimeout);
   handlePan(chart, state, event);
 }
 
 function endPan(chart, state) {
   state.delta = null;
   if (state.panning) {
-    state.panEndTimeout = setTimeout(() => (state.panning = false), 500);
+    state.panning = false;
+    state.filterNextClick = true;
     call(state.options.pan.onPanComplete, [{chart}]);
   }
 }
@@ -128,7 +129,7 @@ export function startHammer(chart, options) {
   const mc = new Hammer.Manager(canvas);
   if (zoomOptions && zoomOptions.pinch.enabled) {
     mc.add(new Hammer.Pinch());
-    mc.on('pinchstart', () => startPinch(chart, state));
+    mc.on('pinchstart', (e) => startPinch(chart, state, e));
     mc.on('pinch', (e) => handlePinch(chart, state, e));
     mc.on('pinchend', (e) => endPinch(chart, state, e));
   }
@@ -158,4 +159,21 @@ export function stopHammer(chart) {
     mc.destroy();
     hammers.delete(chart);
   }
+}
+
+export function hammerOptionsChanged(oldOptions, newOptions) {
+  const {pan: oldPan, zoom: oldZoom} = oldOptions;
+  const {pan: newPan, zoom: newZoom} = newOptions;
+
+  if (oldZoom?.zoom?.pinch?.enabled !== newZoom?.zoom?.pinch?.enabled) {
+    return true;
+  }
+  if (oldPan?.enabled !== newPan?.enabled) {
+    return true;
+  }
+  if (oldPan?.threshold !== newPan?.threshold) {
+    return true;
+  }
+
+  return false;
 }

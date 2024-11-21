@@ -1,6 +1,6 @@
 import Hammer from 'hammerjs';
 import {addListeners, computeDragRect, removeListeners} from './handlers';
-import {startHammer, stopHammer} from './hammer';
+import {hammerOptionsChanged, startHammer, stopHammer} from './hammer';
 import {pan, zoom, resetZoom, zoomScale, getZoomLevel, getInitialScaleBounds, getZoomedScaleBounds, isZoomedOrPanned, isZoomingOrPanning, zoomRect} from './core';
 import {panFunctions, zoomFunctions, zoomRectFunctions} from './scale.types';
 import {getState, removeState} from './state';
@@ -13,7 +13,7 @@ function draw(chart, caller, options) {
   if (dragOptions.drawTime !== caller || !dragEnd) {
     return;
   }
-  const {left, top, width, height} = computeDragRect(chart, options.zoom.mode, dragStart, dragEnd);
+  const {left, top, width, height} = computeDragRect(chart, options.zoom.mode, {dragStart, dragEnd}, dragOptions.maintainAspectRatio);
   const ctx = chart.ctx;
 
   ctx.save();
@@ -87,16 +87,32 @@ export default {
     chart.isZoomingOrPanning = () => isZoomingOrPanning(chart);
   },
 
-  beforeEvent(chart) {
+  beforeEvent(chart, {event}) {
     if (isZoomingOrPanning(chart)) {
       // cancel any event handling while panning or dragging
       return false;
+    }
+    // cancel the next click or mouseup after drag or pan
+    if (event.type === 'click' || event.type === 'mouseup') {
+      const state = getState(chart);
+      if (state.filterNextClick) {
+        state.filterNextClick = false;
+        return false;
+      }
     }
   },
 
   beforeUpdate: function(chart, args, options) {
     const state = getState(chart);
+    const previousOptions = state.options;
     state.options = options;
+
+    // Hammer needs to be restarted when certain options change.
+    if (hammerOptionsChanged(previousOptions, options)) {
+      stopHammer(chart);
+      startHammer(chart, options);
+    }
+
     addListeners(chart, options);
   },
 

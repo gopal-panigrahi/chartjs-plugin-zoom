@@ -134,6 +134,7 @@ module.exports = {
           title: 'Wheel Zoom',
           children: [
             'wheel/category',
+            'wheel/category-min-range',
             'wheel/log',
             'wheel/time',
             'wheel/over-scale-mode',
@@ -144,15 +145,23 @@ module.exports = {
           title: 'Drag to Zoom',
           children: [
             'drag/category',
+            'drag/linear-ratio',
             'drag/linear',
             'drag/log',
+            'drag/reject-outside',
             'drag/time',
             'drag/timeseries',
           ]
         },
-        'api',
+        {
+          title: 'Pan',
+          children: [
+            'pan/region',
+            'pan/toggle',
+          ]
+        },
         'fetch-data',
-        'pan-region',
+        'api',
       ],
     }
   }
